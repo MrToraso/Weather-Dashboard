@@ -1,0 +1,101 @@
+<body class="default">
+
+<div id="weather-effects"></div>
+
+<div class="weather-box">
+  <h1>🌤 TORASOFT WEATHER</h1>
+
+  <input id="city" placeholder="Enter city">
+  <button onclick="getWeather()">SEARCH</button>
+  <div id="loading" class="loading"></div>
+  <div id="result"></div>
+  <link rel="stylesheet"
+  href="{{ url_for('static', filename='style.css') }}?v=1">
+
+</div>
+
+<script>
+async function getWeather(){
+
+  const city = document.getElementById("city").value;
+  const loading = document.getElementById("loading");
+
+  loading.innerHTML =
+  `> connecting to satellite...<br>
+  > retrieving atmospheric data...`;
+
+  const res = await fetch("/weather", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({city})
+  }); loading.innerHTML = "> weather data loaded ✅";
+
+
+  const data = await res.json();
+
+  const result = document.getElementById("result");
+
+  if(data.error){
+    result.innerHTML = "City not found";
+    return;
+  }
+
+  result.innerHTML = `
+    <h2>${data.city}</h2>
+    <h3>${data.temp} °C</h3>
+    <p>💨 Wind: ${data.wind} km/h</p>
+  `;
+
+  changeTheme(data.code);
+}
+
+function changeTheme(code){
+
+  const body = document.body;
+  const fx = document.getElementById("weather-effects");
+
+  fx.innerHTML = "";
+
+  // ☀️ CLEAR
+  if(code === 0){
+    body.className = "clear";
+    fx.innerHTML = `<div class="sun"></div>`;
+  }
+
+  // ☁ CLOUDS
+  else if(code <= 3){
+    body.className = "clouds";
+
+    for(let i=0;i<3;i++){
+      const cloud = document.createElement("div");
+      cloud.className = "cloud";
+      cloud.style.top = (60 + i*80) + "px";
+      cloud.style.animationDuration = (18 + i*5) + "s";
+      fx.appendChild(cloud);
+    }
+  }
+
+  // 🌧 RAIN
+  else if(code >= 61 && code <= 67){
+    body.className = "rain";
+
+    for(let i=0;i<120;i++){
+      const drop = document.createElement("div");
+      drop.className = "raindrop";
+      drop.style.left = Math.random()*100 + "vw";
+      drop.style.animationDuration = (0.5 + Math.random()) + "s";
+      drop.style.animationDelay = Math.random()*2 + "s";
+      fx.appendChild(drop);
+    }
+  }
+
+  else {
+    body.className = "default";
+  }
+}
+
+
+</script>
+
+</body>
+
