@@ -1,3 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather-Dashboard</title>
+
+  <link rel="icon" href="../static/img/favicon.ico">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1">
+</head>
+
 <body class="default">
 
 <div id="weather-effects"></div>
@@ -5,49 +16,70 @@
 <div class="weather-box">
   <h1>🌤 TORASOFT WEATHER</h1>
 
-  <input id="city" placeholder="Enter city">
-  <button onclick="getWeather()">SEARCH</button>
+  <input id="city" type="text" placeholder="Enter city..." autocomplete="off">
+  <button id="searchBtn">SEARCH</button>
+
   <div id="loading" class="loading"></div>
   <div id="result"></div>
-  <link rel="icon" href="../static/img/favicon.ico">
-  <link rel="stylesheet"
-  href="{{ url_for('static', filename='style.css') }}?v=1">
-
 </div>
 
 <script>
+const searchBtn = document.getElementById("searchBtn");
+const cityInput = document.getElementById("city");
+
+searchBtn.addEventListener("click", getWeather);
+cityInput.addEventListener("keypress", function(e){
+  if(e.key === "Enter"){
+    getWeather();
+  }
+});
+
 async function getWeather(){
 
-  const city = document.getElementById("city").value;
+  const city = cityInput.value.trim();
   const loading = document.getElementById("loading");
-
-  loading.innerHTML =
-  `> connecting to satellite...<br>
-  > retrieving atmospheric data...`;
-
-  const res = await fetch("/weather", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({city})
-  }); loading.innerHTML = "> weather data loaded ✅";
-
-
-  const data = await res.json();
-
   const result = document.getElementById("result");
 
-  if(data.error){
-    result.innerHTML = "City not found";
+  if(!city){
+    result.innerHTML = "Please enter a city";
     return;
   }
 
-  result.innerHTML = `
-    <h2>${data.city}</h2>
-    <h3>${data.temp} °C</h3>
-    <p>💨 Wind: ${data.wind} km/h</p>
-  `;
+  loading.innerHTML =
+  `> connecting to satellite...<br>
+   > retrieving atmospheric data...`;
 
-  changeTheme(data.code);
+  result.innerHTML = "";
+
+  try{
+
+    const res = await fetch("/weather", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({city})
+    });
+
+    const data = await res.json();
+
+    loading.innerHTML = "> weather data loaded ✅";
+
+    if(data.error){
+      result.innerHTML = "City not found";
+      return;
+    }
+
+    result.innerHTML = `
+      <h2>${data.city}</h2>
+      <h3>${data.temp} °C</h3>
+      <p>💨 Wind: ${data.wind} km/h</p>
+    `;
+
+    changeTheme(data.code);
+
+  } catch(error){
+    loading.innerHTML = "> connection failed ❌";
+    result.innerHTML = "Server error";
+  }
 }
 
 function changeTheme(code){
@@ -55,17 +87,16 @@ function changeTheme(code){
   const body = document.body;
   const fx = document.getElementById("weather-effects");
 
+  body.className = "";
   fx.innerHTML = "";
 
-  // ☀️ CLEAR
   if(code === 0){
-    body.className = "clear";
+    body.classList.add("clear");
     fx.innerHTML = `<div class="sun"></div>`;
   }
 
-  // ☁ CLOUDS
   else if(code <= 3){
-    body.className = "clouds";
+    body.classList.add("clouds");
 
     for(let i=0;i<3;i++){
       const cloud = document.createElement("div");
@@ -76,9 +107,8 @@ function changeTheme(code){
     }
   }
 
-  // 🌧 RAIN
   else if(code >= 61 && code <= 67){
-    body.className = "rain";
+    body.classList.add("rain");
 
     for(let i=0;i<120;i++){
       const drop = document.createElement("div");
@@ -90,14 +120,14 @@ function changeTheme(code){
     }
   }
 
-  else {
-    body.className = "default";
+  else{
+    body.classList.add("default");
   }
 }
-
-
 </script>
 
 </body>
+</html>
+
 
 
